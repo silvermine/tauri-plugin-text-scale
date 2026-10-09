@@ -12,7 +12,7 @@ links = "tauri-plugin-text-scale"
 exclude = ["/examples", "/dist-js", "/guest-js", "!/guest-js/index.ts", "/node_modules"]
 
 [dependencies]
-serde = { version = "1.0.228" }
+serde = { version = "1.0.228", features = ["derive"] }
 tauri = { version = "2.9.3" }
 thiserror = "2.0.17"
 tracing = { version = "0.1.41", default-features = false, features = ["std", "log"] }

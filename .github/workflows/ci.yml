@@ -9,6 +9,25 @@ env:
    CARGO_TERM_COLOR: always
 
 jobs:
+   kotlin-tests:
+      name: Kotlin Tests
+      runs-on: ubuntu-latest
+
+      steps:
+         - name: Checkout repository
+           uses: actions/checkout@v4
+
+         - name: Setup Java
+           uses: actions/setup-java@v4
+           with:
+              distribution: 'temurin'
+              java-version: '17'
+              cache: 'gradle'
+
+         - name: Run Kotlin tests
+           working-directory: android
+           run: ./gradlew :lib:test
+
    desktop-rust-tests:
       name: Rust Tests (${{ matrix.platform }})
       strategy:

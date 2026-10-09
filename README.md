@@ -26,7 +26,7 @@ a CSS custom property.
 | Windows  | Planned: `UISettings.TextScaleFactor`. Returns `1` until then  |
 | Linux    | `1`. A later version can read the GTK text scale               |
 | macOS    | `1`. macOS has no public API for its text size                 |
-| Android  | Planned: `Configuration.fontScale`. Returns `1` until then     |
+| Android  | `Configuration.fontScale`                                      |
 | iOS      | Planned: `UIFontMetrics` for body text. Returns `1` until then |
 
 ## Architecture
@@ -80,6 +80,22 @@ Run the Rust tests only:
 ```bash
 cargo test --workspace --lib
 ```
+
+Run the Kotlin tests for the Android text scale logic (requires JDK 17 and the Android
+SDK):
+
+```bash
+cd android && ./gradlew :lib:test
+```
+
+The Kotlin tests cover the logic in `android/lib`, which does not depend on the Tauri
+Android API, so the tests run without an emulator or a Tauri app build.
+
+### Manual Android testing
+
+See [Android Text Scale Manual Testing](docs/android-text-scale-manual-testing.md) for
+the device setup and the scenarios: the first read, a change while the app runs,
+rotation, and the WebView text zoom.
 
 ### Example app
 
@@ -142,6 +158,26 @@ Add the default permission to a capability for each window that reads the scale:
 
 `text-scale:default` allows the `get_text_scale` command. The change event needs no
 permission of its own, because `core:default` already allows listening to events.
+
+#### Android
+
+Add `fontScale` to the `android:configChanges` attribute of the app's main activity, in
+`src-tauri/gen/android/app/src/main/AndroidManifest.xml`. The Tauri template does not
+list it:
+
+```xml
+<activity
+   android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|fontScale"
+   ...>
+```
+
+With `fontScale` listed, Android reports a text size change to the running activity,
+and the plugin emits the change event. Without it, Android restarts the activity
+instead, and the plugin emits no event.
+
+The Android WebView multiplies all text by the font scale on its own. The plugin sets
+the WebView's `textZoom` to `100` to turn that off, so that the app applies the scale
+once, where it chooses.
 
 ### API
 

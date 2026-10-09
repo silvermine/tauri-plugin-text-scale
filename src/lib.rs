@@ -21,8 +21,11 @@
 //! ```
 
 mod commands;
+#[cfg(not(target_os = "android"))]
 mod desktop;
 mod error;
+#[cfg(target_os = "android")]
+mod mobile;
 
 pub use error::{Error, Result};
 
@@ -35,8 +38,14 @@ use tracing::debug;
 pub const TEXT_SCALE_CHANGED_EVENT: &str = "tauri-plugin-text-scale:changed";
 
 /// Access to the operating system text scale.
+#[cfg(not(target_os = "android"))]
 pub struct TextScale;
 
+/// Access to the operating system text scale.
+#[cfg(target_os = "android")]
+pub struct TextScale<R: Runtime>(mobile::TextScale<R>);
+
+#[cfg(not(target_os = "android"))]
 impl TextScale {
    /// Returns the current text scale, where `1.0` is the platform's default text size.
    ///
@@ -48,15 +57,43 @@ impl TextScale {
    }
 }
 
+#[cfg(target_os = "android")]
+impl<R: Runtime> TextScale<R> {
+   /// Returns the current text scale, where `1.0` is the platform's default text size.
+   ///
+   /// # Errors
+   ///
+   /// Returns [`Error::ReadFailed`] when the platform fails to report its text size.
+   pub fn scale(&self) -> Result<f64> {
+      self.0.scale()
+   }
+}
+
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the
 /// text scale.
+#[cfg(not(target_os = "android"))]
 pub trait TextScaleExt<R: Runtime> {
    fn text_scale(&self) -> &TextScale;
 }
 
+/// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the
+/// text scale.
+#[cfg(target_os = "android")]
+pub trait TextScaleExt<R: Runtime> {
+   fn text_scale(&self) -> &TextScale<R>;
+}
+
+#[cfg(not(target_os = "android"))]
 impl<R: Runtime, T: Manager<R>> TextScaleExt<R> for T {
    fn text_scale(&self) -> &TextScale {
       self.state::<TextScale>().inner()
+   }
+}
+
+#[cfg(target_os = "android")]
+impl<R: Runtime, T: Manager<R>> TextScaleExt<R> for T {
+   fn text_scale(&self) -> &TextScale<R> {
+      self.state::<TextScale<R>>().inner()
    }
 }
 
@@ -75,7 +112,13 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
       .invoke_handler(tauri::generate_handler![commands::get_text_scale])
       .setup(|app, _api| {
          debug!("registering the text scale plugin state");
+
+         #[cfg(not(target_os = "android"))]
          app.manage(TextScale);
+
+         #[cfg(target_os = "android")]
+         app.manage(TextScale(mobile::init(app, _api)?));
+
          Ok(())
       })
       .build()
