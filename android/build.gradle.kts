@@ -1,11 +1,17 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
 }
 
+// Match on the project directory as well as the path: a consuming Tauri app may
+// have its own `:lib` module.
+val isStandaloneLibBuild = findProject(":lib")?.projectDir == file("lib")
+
 android {
     namespace = "org.silvermine.plugin.textscale"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 23
@@ -14,41 +20,38 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+
+    // A Tauri app includes only this module, so it compiles the :lib sources
+    // directly. AGP 9 needs this inside the `android` block.
+    if (!isStandaloneLibBuild) {
+        sourceSets {
+            named("main") {
+                java.srcDir("lib/src/main/java")
+            }
+        }
     }
 }
 
-// Match on the project directory as well as the path: a consuming Tauri app may
-// have its own `:lib` module.
-if (findProject(":lib")?.projectDir == file("lib")) {
-    // Standalone build: depend on :lib as a separate module so its unit tests
-    // can run on the JVM without the Android framework or the Tauri Android API.
-    dependencies {
-        implementation(project(":lib"))
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
     }
-} else {
-    // Tauri subproject build: the app's `settings.gradle` includes only this
-    // module, so compile the :lib sources directly.
-    android.sourceSets["main"].java.srcDir("lib/src/main/java")
 }
 
 dependencies {
+    // Standalone build: depend on :lib as a separate module so its unit tests
+    // can run on the JVM without the Android framework or the Tauri Android API.
+    if (isStandaloneLibBuild) {
+        implementation(project(":lib"))
+    }
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    implementation(project(":tauri-android"))
+    if (findProject(":tauri-android") != null) {
+        implementation(project(":tauri-android"))
+    }
 }
