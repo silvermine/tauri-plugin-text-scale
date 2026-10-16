@@ -21,13 +21,19 @@
 //! ```
 
 mod commands;
-#[cfg(desktop)]
+#[cfg(all(desktop, not(windows)))]
 mod desktop;
 mod error;
 #[cfg(mobile)]
 mod mobile;
+#[cfg(any(windows, test))]
+mod scale_cache;
+#[cfg(windows)]
+mod windows;
 
-#[cfg(desktop)]
+#[cfg(windows)]
+use self::windows as platform;
+#[cfg(all(desktop, not(windows)))]
 use desktop as platform;
 #[cfg(mobile)]
 use mobile as platform;
@@ -92,8 +98,11 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
       .setup(|app, _api| {
          debug!("registering the text scale plugin state");
 
-         #[cfg(desktop)]
+         #[cfg(all(desktop, not(windows)))]
          let platform = desktop::init();
+
+         #[cfg(windows)]
+         let platform = windows::init(app);
 
          #[cfg(mobile)]
          let platform = mobile::init(app, _api)?;

@@ -23,7 +23,7 @@ a CSS custom property.
 
 | Platform | Source of the scale                                                     |
 | -------- | ----------------------------------------------------------------------- |
-| Windows  | Planned: `UISettings.TextScaleFactor`. Returns `1` until then           |
+| Windows  | `UISettings.TextScaleFactor`                                            |
 | Linux    | `1`. A later version can read the GTK text scale                        |
 | macOS    | `1`. macOS has no public API for its text size                          |
 | Android  | `Configuration.fontScale`                                               |
@@ -115,6 +115,12 @@ rotation, the WebView text zoom and activity recreation.
 See [iOS text scale manual testing](docs/ios-text-scale-manual-testing.md) for the
 simulator setup and the scenarios: the first read, a change while the app runs, every
 text size, a change in the background and the WebView text size.
+
+### Manual Windows testing
+
+See [Windows text scale manual testing](docs/windows-text-scale-manual-testing.md) for
+the setup and the scenarios: the first read, a change while the app runs, the smallest and
+largest text size, the WebView text size and a full-trust MSIX package.
 
 ### Example app
 
